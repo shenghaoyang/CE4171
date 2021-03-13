@@ -1,0 +1,42 @@
+syntax = "proto3";
+package info.shenghaoyang.ntu.ntu_iot.dlserver;
+
+
+service DLServer {
+    rpc Infer(InferenceRequest) returns (InferenceResponse) {}
+}
+
+/*
+ * Label - label assigned to audio sample.
+ */
+enum Label {
+    DOWN = 0;
+    GO = 1;
+    LEFT = 2;
+    NO = 3;
+    RIGHT = 4;
+    STOP = 5;
+    UP = 6;
+    YES = 7;
+}
+
+
+/*
+ * InferenceRequest
+ *
+ * audio_samples: At most 16000 float audio samples at 16000 Hz.
+ */
+message InferenceRequest {
+    repeated float audio_samples = 1 [packed=true];
+}
+
+
+/*
+ * InferenceResponse
+ *
+ * Label: Inferred label.
+ * Error: Error string.
+ */
+message InferenceResponse {
+    Label label = 1;
+}
