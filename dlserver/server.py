@@ -8,6 +8,7 @@ Implementation of the deep learning server.
 import logging
 import pathlib
 import grpc
+import wavio
 import tensorflow as tf
 from tensorflow import keras
 from train.preprocess import get_spectrogram, transform_spectrogram_for_inference
@@ -33,7 +34,7 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         super().__init__()
         self._model = keras.models.load_model(model_path)
 
-    def Infer(
+    async def Infer(
         self, request: InferenceRequest, context: grpc.ServicerContext
     ) -> InferenceResponse:
         """
