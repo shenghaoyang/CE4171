@@ -9,47 +9,85 @@ Main entry point for the deep learning server application.
 
 import logging
 import argparse
-import pathlib
 import grpc
 import asyncio
+import dataclasses
+import configparser
 from typing import Sequence
-from dlserver.server import DLServer
+from dlserver.server.server import DLServer, Config as DLServerConfig
 from dlserver import dlserver_pb2_grpc
 
 
 logger = logging.getLogger(__name__)
 
 
-async def dlserver(args: Sequence[str]):
+@dataclasses.dataclass(frozen=True)
+class AppConfig:
+    """
+    Global application configuration.
+    """
+    # RPC server endpoint.
+    endpoint: str
+    # Maximum number of concurrent RPCs.
+    max_concurrent_rpcs: int
+    # DLServer configuration.
+    dlserver: DLServerConfig
+
+    @classmethod
+    def from_config(cls, config: configparser.ConfigParser) -> 'AppConfig':
+        """
+        Load configuration from a parsed configuration.
+
+        :param config: parsed configuration.
+        :return: loaded configuration.
+        """
+        out = {
+            'endpoint': config['RPCServer']['Endpoint'],
+            'max_concurrent_rpcs': config['RPCServer'].getint('MaxConcurrentRPCs'),
+            'dlserver': DLServerConfig.from_config(config)
+        }
+
+        return cls(**out)
+
+
+async def dlserver(args: Sequence[str]) -> int:
     """
     Entry point for the DLServer application.
 
     :param args: program command line arguments (including conventional argv[0]).
     """
+    logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
     logger.setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="""Audio recognition inference / training server written for the NTU SCSE IoT course"""
     )
-    parser.add_argument("SAVED_MODEL", help="path to the saved audio recognition model")
-    parser.add_argument("ADDRESS_PORT", help="address and port to run the server at")
+
+    def read_config(path: str) -> AppConfig:
+        p = configparser.ConfigParser()
+        p.read(path)
+
+        return AppConfig.from_config(p)
+    parser.add_argument("CONFIG", help="path to the configuration .ini file", type=read_config)
     parsed = parser.parse_args(args[1:])
+    appconfig = parsed.CONFIG
 
-    model_path = pathlib.Path(parsed.SAVED_MODEL)
-    logger.info(f"using saved model at {model_path}")
-    logger.info(f"listening on {parsed.ADDRESS_PORT}")
+    logger.info(f"running with configuration:\n{appconfig}")
 
-    server = grpc.aio.server(maximum_concurrent_rpcs=10)
-    server.add_insecure_port(parsed.ADDRESS_PORT)
-    dlserver_pb2_grpc.add_DLServerServicer_to_server(DLServer(model_path), server)
+    server = grpc.aio.server()
+    server.add_insecure_port(appconfig.endpoint)
+    dlserver_pb2_grpc.add_DLServerServicer_to_server(DLServer(appconfig.dlserver), server)
 
     await server.start()
     await server.wait_for_termination()
 
+    return 0
+
+
+def main() -> int:
+    import sys
+    return asyncio.run(dlserver(sys.argv))
 
 if __name__ == "__main__":
-    import sys
-
-    asyncio.run(dlserver(sys.argv))
-    exit(0)
+    main()
