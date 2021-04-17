@@ -1,9 +1,12 @@
 syntax = "proto3";
+
+import "google/protobuf/empty.proto";
 package info.shenghaoyang.ntu.ntu_iot.dlserver;
 
 
 service DLServer {
     rpc Infer(InferenceRequest) returns (InferenceResponse) {}
+    rpc Train(TrainingRequest) returns (google.protobuf.Empty) {}
 }
 
 /*
@@ -34,9 +37,24 @@ message InferenceRequest {
 /*
  * InferenceResponse
  *
- * Label: Inferred label.
+ * label: Inferred label.
  * Error: Error string.
  */
 message InferenceResponse {
     Label label = 1;
+}
+
+
+/*
+ * TrainingRequest
+ *
+ * label: Data label.
+ * audio_samples: audio to associate with label.
+ * train_now: forces immediate training. Otherwise, training may be delayed to
+ *            train on samples in bulk.
+ */
+message TrainingRequest {
+    Label label = 1;
+    repeated float audio_samples = 2 [packed=true];
+    //bool train_now = 3;
 }
