@@ -49,7 +49,7 @@ class PersistentState:
                         untrained_samples INTEGER,
                         model_path TEXT);""")
             self._db_conn.execute(
-                r"INSERT INTO state VALUES(0, 0, ?)", (self._initial_model_path, ))
+                r"INSERT INTO state VALUES(0, 0, ?)", (str(self._initial_model_path), ))
 
     @property
     def model_path(self) -> Path:
