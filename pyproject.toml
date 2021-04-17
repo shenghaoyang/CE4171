@@ -1,0 +1,20 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "dlserver"
+author = "Shenghao Yang"
+author-email = "me@shenghaoyang.info"
+classifiers = [ "License :: OSI Approved :: MIT License",]
+requires = [
+    "tensorflow~=2.5.0rc1",
+    "scipy~=1.6.2",
+]
+dev-requires = [
+    "grpcio-tools"
+]
+
+[tool.flit.scripts]
+dlserver = "dlserver.app:main"
+
