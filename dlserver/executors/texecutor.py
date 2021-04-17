@@ -1,48 +1,59 @@
 """
 iexecutor.py
 
-Implementation details of the training executor.
+Implementation of a training executor that performs model training in
+a subprocess.
 """
 
-import pathlib
-import numpy as np
-import tensorflow as tf
 import logging
-from tensorflow import keras
-from train.preprocess import get_spectrogram, transform_spectrogram_for_inference
-
-
-model: keras.Model
-
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def init(model_path: pathlib.Path, ):
+def train(data_paths: Sequence[Path], batch_size: int, epochs: int, save_to: Path) -> float:
     """
-    Initialization function for the training executors.
+    Run actual training.
 
-    Should only be called from an inference executor.
+    Should only be called in the training subprocess.
 
-    :param model_path: path to the model that the executors should load.
+    :param data_paths: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param batch_size: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param epochs: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param save_to: Path to save the trained model to.
+
+    :return: accuracy of the model evaluated over the test dataset in the range ``[0, 1]``.
     """
-    global model
-    model = keras.models.load_model(model_path)
+    from dlserver.training.trainer import Trainer as TTrainer
+    trainer = TTrainer(data_paths, batch_size, epochs)
+    trainer.train()
+    trainer.save(save_to)
+
+    return trainer.test()
 
 
-def train(data_label: list[np.ndarray, int]):
+async def subprocess_train(save_to: Path,
+                           data_paths: Sequence[Path], batch_size: int = 16, epochs: int = 20, mp_context=None) \
+        -> float:
     """
-    Run training on the audio samples.
+    Train the voice recognition model using a subprocess.
 
-    Should only be called from the training executor.
+    :param save_to: Path to save the trained model to.
+    :param data_paths: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param batch_size: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param epochs: See the documentation for ``dlserver.training.trainer.Trainer``.
+    :param mp_context: multiprocessing context to use.
+    :return: accuracy of the model evaluated over the test dataset in the range ``[0, 1]`.
     """
-    global model
+    loop = asyncio.get_running_loop()
+    training_executor = ProcessPoolExecutor(max_workers=1, mp_context=mp_context)
 
-
-
-    tensor = tf.constant(audio_samples, dtype=tf.float32)
-    spect = transform_spectrogram_for_inference(get_spectrogram(tensor))
-    label = tf.argmax(model.predict(spect), axis=1)[0]
-
-    return label
+    try:
+        return await loop.run_in_executor(training_executor, train,
+                                          data_paths, batch_size, epochs, save_to)
+    finally:
+        training_executor.shutdown(wait=False, cancel_futures=True)

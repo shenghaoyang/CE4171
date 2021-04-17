@@ -8,17 +8,15 @@ Implementation details of the inference executor.
 import asyncio
 import pathlib
 import numpy as np
-import tensorflow as tf
 import logging
 import time
 from pathlib import Path
-from tensorflow import keras
 from concurrent.futures import ProcessPoolExecutor
-from train.preprocess import get_spectrogram, transform_spectrogram_for_inference
 from dlserver.labels import Labels
 
 
-model: keras.Model
+# Global storing loaded model
+model = None
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +32,8 @@ def init(model_path: pathlib.Path):
     :param model_path: path to the model that the executors should load.
     """
     global model
+    from tensorflow import keras
+
     model = keras.models.load_model(model_path)
 
 
@@ -47,9 +47,13 @@ def infer(audio_samples: np.ndarray) -> Labels:
     :return: inferred label.
     """
     global model
+    import tensorflow as tf
+    from train.preprocess import get_spectrogram, transform_spectrogram_for_inference
 
     tensor = tf.constant(audio_samples, dtype=tf.float32)
     spect = transform_spectrogram_for_inference(get_spectrogram(tensor))
+    # noinspection PyUnresolvedReferences
+    # suppressed because init() will set global ``model`` to a loaded model.
     label = tf.argmax(model.predict(spect), axis=1)[0]
 
     return Labels(label)
@@ -65,15 +69,13 @@ def warmup(*args, **kwargs):
 
 
 class Inferer:
-    def __init__(self, model_path: Path, workers: int = 1, limit: int = 10,
-                 mp_context=None):
+    def __init__(self, model_path: Path, workers: int = 1, mp_context=None):
         """
         Create a new inferrer, that performs inference using a model
-        using spawned subprocesses.
+        by delegating inference work to created subprocesses.
 
         :param model_path: path to the model to use.
         :param workers: workers to start.
-        :param limit: maximum number of tasks (queued + running).
         :param mp_context: multiprocessing context to use.
         """
         self._model_path = model_path
@@ -90,7 +92,6 @@ class Inferer:
         self._swap_done = asyncio.Event()
         self._swap_done.set()
 
-        self._limit = limit
         self._tasks: set[asyncio.Task] = set()
 
     async def _startup(self, model_path: Path) -> ProcessPoolExecutor:
@@ -104,12 +105,12 @@ class Inferer:
         # Try and warm up executors.
         # Not guaranteed to always work.
         futs = [e.submit(warmup) for _ in range(self._workers)]
-        tasks = list(map(asyncio.create_task, map(asyncio.wrap_future, futs)))
+        async_futs: list[asyncio.Future] = list(map(asyncio.wrap_future, futs))
         try:
-            await asyncio.wait(tasks)
+            await asyncio.wait(async_futs)
         except asyncio.CancelledError:
-            for t in tasks:
-                t.cancel()
+            for f in async_futs:
+                f.cancel()
             e.shutdown(wait=False, cancel_futures=True)
             raise
 
@@ -138,7 +139,8 @@ class Inferer:
         # Wait for all pending tasks to complete and swap the executor over.
         try:
             tasks = list(self._tasks)
-            await asyncio.wait(tasks)
+            if tasks:
+                await asyncio.wait(tasks)
             self._inference_executor.shutdown(wait=False, cancel_futures=True)
             self._inference_executor = new_e
             self._model_path = new_path
