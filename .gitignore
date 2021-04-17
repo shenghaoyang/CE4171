@@ -5,4 +5,5 @@ saved/
 .ipynb_checkpoints
 __pycache__/
 .idea/
-*_pb2*
+uploaded/
+test_client.py
