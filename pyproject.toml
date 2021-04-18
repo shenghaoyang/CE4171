@@ -6,15 +6,19 @@ build-backend = "flit_core.buildapi"
 module = "dlserver"
 author = "Shenghao Yang"
 author-email = "me@shenghaoyang.info"
-classifiers = [ "License :: OSI Approved :: MIT License",]
+classifiers = [
+    "License :: OSI Approved :: MIT License"
+]
+requires-python = "~=3.9"
 requires = [
     "tensorflow~=2.5.0rc1",
     "scipy~=1.6.2",
 ]
-dev-requires = [
+
+[tool.flit.metadata.requires-extra]
+dev = [
     "grpcio-tools"
 ]
 
 [tool.flit.scripts]
 dlserver = "dlserver.app:main"
-
