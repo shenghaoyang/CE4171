@@ -26,6 +26,7 @@ class AppConfig:
     """
     Global application configuration.
     """
+
     # RPC server endpoint.
     endpoint: str
     # Maximum number of concurrent RPCs.
@@ -34,7 +35,7 @@ class AppConfig:
     dlserver: DLServerConfig
 
     @classmethod
-    def from_config(cls, config: configparser.ConfigParser) -> 'AppConfig':
+    def from_config(cls, config: configparser.ConfigParser) -> "AppConfig":
         """
         Load configuration from a parsed configuration.
 
@@ -42,9 +43,9 @@ class AppConfig:
         :return: loaded configuration.
         """
         out = {
-            'endpoint': config['RPCServer']['Endpoint'],
-            'max_concurrent_rpcs': config['RPCServer'].getint('MaxConcurrentRPCs'),
-            'dlserver': DLServerConfig.from_config(config)
+            "endpoint": config["RPCServer"]["Endpoint"],
+            "max_concurrent_rpcs": config["RPCServer"].getint("MaxConcurrentRPCs"),
+            "dlserver": DLServerConfig.from_config(config),
         }
 
         return cls(**out)
@@ -69,7 +70,10 @@ async def dlserver(args: Sequence[str]) -> int:
         p.read(path)
 
         return AppConfig.from_config(p)
-    parser.add_argument("CONFIG", help="path to the configuration .ini file", type=read_config)
+
+    parser.add_argument(
+        "CONFIG", help="path to the configuration .ini file", type=read_config
+    )
     parsed = parser.parse_args(args[1:])
     appconfig = parsed.CONFIG
 
@@ -77,7 +81,9 @@ async def dlserver(args: Sequence[str]) -> int:
 
     server = grpc.aio.server()
     server.add_insecure_port(appconfig.endpoint)
-    dlserver_pb2_grpc.add_DLServerServicer_to_server(DLServer(appconfig.dlserver), server)
+    dlserver_pb2_grpc.add_DLServerServicer_to_server(
+        DLServer(appconfig.dlserver), server
+    )
 
     await server.start()
     await server.wait_for_termination()
@@ -87,7 +93,9 @@ async def dlserver(args: Sequence[str]) -> int:
 
 def main() -> int:
     import sys
+
     return asyncio.run(dlserver(sys.argv))
+
 
 if __name__ == "__main__":
     main()

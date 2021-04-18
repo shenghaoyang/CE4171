@@ -15,8 +15,10 @@ class PersistentState:
 
     State storage is backed by an external SQLite database.
     """
-    def __init__(self, path: Path,
-                 initial_model_path: Path, force_initialize: bool = False):
+
+    def __init__(
+        self, path: Path, initial_model_path: Path, force_initialize: bool = False
+    ):
         """
         Initialize server state from a database path.
 
@@ -47,9 +49,11 @@ class PersistentState:
                     CREATE TABLE state(
                         id INTEGER PRIMARY KEY,
                         untrained_samples INTEGER,
-                        model_path TEXT);""")
+                        model_path TEXT);"""
+            )
             self._db_conn.execute(
-                r"INSERT INTO state VALUES(0, 0, ?)", (str(self._initial_model_path), ))
+                r"INSERT INTO state VALUES(0, 0, ?)", (str(self._initial_model_path),)
+            )
 
     @property
     def model_path(self) -> Path:
@@ -65,7 +69,8 @@ class PersistentState:
             cur = self._db_conn.execute(
                 r"""SELECT model_path
                     FROM state
-                    WHERE id = 0""")
+                    WHERE id = 0"""
+            )
             return Path(cur.fetchone()[0])
 
     @property
@@ -80,7 +85,8 @@ class PersistentState:
             cur = self._db_conn.execute(
                 r"""SELECT untrained_samples
                     FROM state
-                    WHERE id = 0""")
+                    WHERE id = 0"""
+            )
             return cur.fetchone()[0]
 
     def update(self, untrained_samples: int, model_path: Path):
@@ -95,7 +101,7 @@ class PersistentState:
                 r"""UPDATE state
                     SET untrained_samples = ?, model_path = ?
                     WHERE id = 0""",
-                (untrained_samples, str(model_path))
+                (untrained_samples, str(model_path)),
             )
 
     def increment_untrained_samples(self, by: int) -> int:
@@ -111,7 +117,7 @@ class PersistentState:
                     SET untrained_samples = untrained_samples + ?
                     WHERE id = 0
                     RETURNING untrained_samples""",
-                (by, )
+                (by,),
             )
 
             return cur.fetchone()[0]

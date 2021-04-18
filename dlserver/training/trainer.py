@@ -21,7 +21,10 @@ class Trainer:
     """
     Trainer class that sets up the training environment and allows for training to proceed.
     """
-    def __init__(self, data_paths: Sequence[Path], batch_size: int = 16, epochs: int = 20):
+
+    def __init__(
+        self, data_paths: Sequence[Path], batch_size: int = 16, epochs: int = 20
+    ):
         """
         Initialize a trainer.
 
@@ -40,14 +43,21 @@ class Trainer:
         self._epochs = epochs
 
         command_names = set(
-            map(lambda p: p.name,
-                filter(lambda p: p.is_dir(),
-                       chain.from_iterable(data_path.iterdir() for data_path in data_paths))))
+            map(
+                lambda p: p.name,
+                filter(
+                    lambda p: p.is_dir(),
+                    chain.from_iterable(
+                        data_path.iterdir() for data_path in data_paths
+                    ),
+                ),
+            )
+        )
         self._commands = sorted(command_names)
 
         filenames = []
         for data_path in data_paths:
-            pattern = str(data_path.joinpath('*/*'))
+            pattern = str(data_path.joinpath("*/*"))
             filenames.extend(tf.io.gfile.glob(pattern))
 
         np.random.shuffle(filenames)
@@ -65,7 +75,8 @@ class Trainer:
 
         # Preprocess dataset to generate FFTs
         train_ds, val_ds, test_ds = tuple(
-            map(lambda files: preprocess_dataset(files, self.commands), splits))
+            map(lambda files: preprocess_dataset(files, self.commands), splits)
+        )
 
         # Pre-calculate the input shape for entry into the model.
         self._input_shape = next(iter(map(lambda t: t[0].shape, train_ds.take(1))))
@@ -81,24 +92,26 @@ class Trainer:
         norm_layer = preprocessing.Normalization()
         norm_layer.adapt(train_ds.map(lambda x, _: x))
 
-        model = models.Sequential([
-            layers.InputLayer(input_shape=self._input_shape),
-            preprocessing.Resizing(32, 32),
-            norm_layer,
-            layers.Conv2D(32, 3, activation='relu'),
-            layers.Conv2D(64, 3, activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Dropout(0.25),
-            layers.Flatten(),
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(num_labels),
-        ])
+        model = models.Sequential(
+            [
+                layers.InputLayer(input_shape=self._input_shape),
+                preprocessing.Resizing(32, 32),
+                norm_layer,
+                layers.Conv2D(32, 3, activation="relu"),
+                layers.Conv2D(64, 3, activation="relu"),
+                layers.MaxPooling2D(),
+                layers.Dropout(0.25),
+                layers.Flatten(),
+                layers.Dense(128, activation="relu"),
+                layers.Dropout(0.5),
+                layers.Dense(num_labels),
+            ]
+        )
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=['accuracy'],
+            metrics=["accuracy"],
         )
 
         return model
@@ -187,8 +200,9 @@ class Trainer:
         :return: test set accuracy.
         """
         test_size = len(self._test_ds)
-        test_audio = np.zeros([test_size] + self._input_shape.as_list(),
-                              dtype=np.float32)
+        test_audio = np.zeros(
+            [test_size] + self._input_shape.as_list(), dtype=np.float32
+        )
         test_labels = np.zeros([test_size], dtype=np.int)
 
         for i, (audio, label) in enumerate(self._test_ds.as_numpy_iterator()):

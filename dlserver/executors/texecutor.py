@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def train(data_paths: Sequence[Path], batch_size: int, epochs: int, save_to: Path) -> float:
+def train(
+    data_paths: Sequence[Path], batch_size: int, epochs: int, save_to: Path
+) -> float:
     """
     Run actual training.
 
@@ -29,6 +31,7 @@ def train(data_paths: Sequence[Path], batch_size: int, epochs: int, save_to: Pat
     :return: accuracy of the model evaluated over the test dataset in the range ``[0, 1]``.
     """
     from dlserver.training.trainer import Trainer as TTrainer
+
     trainer = TTrainer(data_paths, batch_size, epochs)
     trainer.train()
     trainer.save(save_to)
@@ -36,9 +39,13 @@ def train(data_paths: Sequence[Path], batch_size: int, epochs: int, save_to: Pat
     return trainer.test()
 
 
-async def subprocess_train(save_to: Path,
-                           data_paths: Sequence[Path], batch_size: int = 16, epochs: int = 20, mp_context=None) \
-        -> float:
+async def subprocess_train(
+    save_to: Path,
+    data_paths: Sequence[Path],
+    batch_size: int = 16,
+    epochs: int = 20,
+    mp_context=None,
+) -> float:
     """
     Train the voice recognition model using a subprocess.
 
@@ -53,7 +60,8 @@ async def subprocess_train(save_to: Path,
     training_executor = ProcessPoolExecutor(max_workers=1, mp_context=mp_context)
 
     try:
-        return await loop.run_in_executor(training_executor, train,
-                                          data_paths, batch_size, epochs, save_to)
+        return await loop.run_in_executor(
+            training_executor, train, data_paths, batch_size, epochs, save_to
+        )
     finally:
         training_executor.shutdown(wait=False, cancel_futures=True)

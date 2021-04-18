@@ -34,6 +34,7 @@ class Config:
     """
     Configuration for the deep learning server.
     """
+
     # Server state file. If the state file is absent it is
     # recreated.
     state_file: Path
@@ -51,7 +52,7 @@ class Config:
     samples_before_train: int
 
     @classmethod
-    def from_config(cls, config: configparser.ConfigParser) -> 'Config':
+    def from_config(cls, config: configparser.ConfigParser) -> "Config":
         """
         Load configuration from a parsed configuration.
 
@@ -61,15 +62,15 @@ class Config:
         :return: loaded configuration.
         """
 
-        sc = config['DLServer']
+        sc = config["DLServer"]
         out = {
-            'state_file': Path(sc['StateFile']),
-            'infer_upload_path': Path(sc['InferUploadPath']),
-            'training_upload_path': Path(sc['TrainingUploadPath']),
-            'base_samples_path': Path(sc['BaseSamplesPath']),
-            'new_models_path': Path(sc['NewModelsPath']),
-            'initial_model_path': Path(sc['ModelPath']),
-            'samples_before_train': sc.getint('SamplesBeforeTrain')
+            "state_file": Path(sc["StateFile"]),
+            "infer_upload_path": Path(sc["InferUploadPath"]),
+            "training_upload_path": Path(sc["TrainingUploadPath"]),
+            "base_samples_path": Path(sc["BaseSamplesPath"]),
+            "new_models_path": Path(sc["NewModelsPath"]),
+            "initial_model_path": Path(sc["ModelPath"]),
+            "samples_before_train": sc.getint("SamplesBeforeTrain"),
         }
 
         return cls(**out)
@@ -89,12 +90,16 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         super().__init__()
 
         self._config = config
-        self._persistent_state = PersistentState(path=self._config.state_file,
-                                                 initial_model_path=self._config.initial_model_path)
+        self._persistent_state = PersistentState(
+            path=self._config.state_file,
+            initial_model_path=self._config.initial_model_path,
+        )
 
         self._loop = asyncio.get_running_loop()
         self._context = multiprocessing.get_context("forkserver")
-        self._inferer = iexecutor.Inferer(model_path=self._persistent_state.model_path, mp_context=self._context)
+        self._inferer = iexecutor.Inferer(
+            model_path=self._persistent_state.model_path, mp_context=self._context
+        )
         self._train_swap_task = None
 
     @staticmethod
@@ -140,8 +145,12 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         async def train_and_swap_impl():
             logger.info(f"starting training of new model, saving at {save_to}")
             accuracy = await texecutor.subprocess_train(
-                save_to, (self._config.base_samples_path, self._config.training_upload_path))
-            logger.info(f"completed training of new model at {save_to}, accuracy: {accuracy}")
+                save_to,
+                (self._config.base_samples_path, self._config.training_upload_path),
+            )
+            logger.info(
+                f"completed training of new model at {save_to}, accuracy: {accuracy}"
+            )
 
             logger.info(f"swapping to new model at {save_to}")
             await self._inferer.swap(save_to)
@@ -158,9 +167,13 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
                 logger.warning(f"failed to train and swap to a new model: {e}")
                 return
 
-            logger.info(f"updating persistent state, trained on {untrained} additional samples,"
-                        f" new model path is at {save_to}")
-            self._persistent_state.update(self._persistent_state.untrained_samples - untrained, save_to)
+            logger.info(
+                f"updating persistent state, trained on {untrained} additional samples,"
+                f" new model path is at {save_to}"
+            )
+            self._persistent_state.update(
+                self._persistent_state.untrained_samples - untrained, save_to
+            )
 
         self._train_swap_task = asyncio.create_task(train_and_swap_impl())
         self._train_swap_task.add_done_callback(done)
@@ -184,10 +197,16 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         logger.info(f"inferring sample from {peer}: UUID {uid}")
 
         samples = np.array(request.audio_samples, dtype=np.float32)
-        label = await self._inferer.infer(np.array(request.audio_samples, dtype=np.float32))
+        label = await self._inferer.infer(
+            np.array(request.audio_samples, dtype=np.float32)
+        )
 
         logger.info(f"inferred {peer}'s sample as having label {label}")
-        wavfile.write(self._config.infer_upload_path.joinpath(f"{uid}-{label.to_text()}.wav"), 16000, samples)
+        wavfile.write(
+            self._config.infer_upload_path.joinpath(f"{uid}-{label.to_text()}.wav"),
+            16000,
+            samples,
+        )
 
         return InferenceResponse(label=label.value)
 
@@ -209,16 +228,24 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         logger.info(f"saving training sample from {peer}: UUID {uid}, label {label}")
         samples = np.array(request.audio_samples, dtype=np.float32)
 
-        destination_directory = self._config.training_upload_path.joinpath(label.to_text())
+        destination_directory = self._config.training_upload_path.joinpath(
+            label.to_text()
+        )
         destination_directory.mkdir(mode=0o770, parents=True, exist_ok=True)
 
-        wavfile.write(destination_directory.joinpath(f"{uid}.wav"), 16000, (samples * 32767.).astype(np.int16))
+        wavfile.write(
+            destination_directory.joinpath(f"{uid}.wav"),
+            16000,
+            (samples * 32767.0).astype(np.int16),
+        )
 
         untrained_samples = self._persistent_state.increment_untrained_samples(1)
         logger.info(f"server has collected {untrained_samples} untrained samples")
 
         if untrained_samples >= self._config.samples_before_train:
-            logger.info(f"collected a sufficient amount of uploaded training samples: starting training")
+            logger.info(
+                f"collected a sufficient amount of uploaded training samples: starting training"
+            )
             if self._train_and_swap():
                 logger.info(f"started training and swapping task")
             else:

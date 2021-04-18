@@ -85,8 +85,11 @@ class Inferer:
 
         # Executor. Not warmed up initially.
         self._inference_executor = ProcessPoolExecutor(
-            max_workers=self._workers, mp_context=self._mp_context,
-            initializer=init, initargs=(model_path,))
+            max_workers=self._workers,
+            mp_context=self._mp_context,
+            initializer=init,
+            initargs=(model_path,),
+        )
 
         self._swapping = False
         self._swap_done = asyncio.Event()
@@ -100,8 +103,12 @@ class Inferer:
 
         :return: warmed-up executor.
         """
-        e = ProcessPoolExecutor(max_workers=self._workers, mp_context=self._mp_context,
-                                initializer=init, initargs=(model_path,))
+        e = ProcessPoolExecutor(
+            max_workers=self._workers,
+            mp_context=self._mp_context,
+            initializer=init,
+            initargs=(model_path,),
+        )
         # Try and warm up executors.
         # Not guaranteed to always work.
         futs = [e.submit(warmup) for _ in range(self._workers)]
@@ -177,7 +184,9 @@ class Inferer:
             await self._swap_done.wait()
 
         async def coro() -> Labels:
-            return await self._loop.run_in_executor(self._inference_executor, infer, samples)
+            return await self._loop.run_in_executor(
+                self._inference_executor, infer, samples
+            )
 
         task = asyncio.create_task(coro())
         task.add_done_callback(lambda t: self._tasks.remove(t))
