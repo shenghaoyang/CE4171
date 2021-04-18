@@ -7,3 +7,6 @@ __pycache__/
 .idea/
 uploaded/
 test_client.py
+state.sqlite
+TODO
+dist/
