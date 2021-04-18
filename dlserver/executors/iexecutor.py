@@ -48,7 +48,7 @@ def infer(audio_samples: np.ndarray) -> Labels:
     """
     global model
     import tensorflow as tf
-    from train.preprocess import get_spectrogram, transform_spectrogram_for_inference
+    from dlserver.preprocess import get_spectrogram, transform_spectrogram_for_inference
 
     tensor = tf.constant(audio_samples, dtype=tf.float32)
     spect = transform_spectrogram_for_inference(get_spectrogram(tensor))
