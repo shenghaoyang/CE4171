@@ -1,5 +1,5 @@
 FROM archlinux:latest
-ARG wheel=dlserver-0.0.1.dev1-py2.py3-none-any.whl
+ARG wheel=dlserver-0.0.2.dev1-py2.py3-none-any.whl
 LABEL maintainer="me@shenghaoyang.info"
 
 RUN pacman -Syu --noconfirm python python-pip python-wheel sqlite && \
