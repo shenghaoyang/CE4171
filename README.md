@@ -14,6 +14,8 @@ The deep learning task that this server tackles is covered in
 The training steps used to build the server's model are outlined in a
 Jupyter notebook, stored at `train/training.ipynb`.
 
+Accuracy and other model metrics can also be found in the same notebook.
+
 After executing all notebook cells, the model will be trained and saved at
 `train/saved/audiorecog`.
 
@@ -38,6 +40,10 @@ steps do not install any GPU-dependent packages.
     - Customize `server_container.ini` as necessary, changing the listening
       endpoint and other parameters as necessary.
     - Paths specified in the configuration file should not be changed.
+2. Build distribution artifacts.
+    ```shell
+    $ flit build
+    ```
 2. Build the Docker container.
     ```shell
     $ docker build -t dlserver:<tag> .
