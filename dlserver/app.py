@@ -10,9 +10,12 @@ Main entry point for the deep learning server application.
 import logging
 import argparse
 import grpc
+import enum
+import signal
 import asyncio
 import dataclasses
 import configparser
+from functools import partial
 from typing import Sequence
 from dlserver.server.server import DLServer, Config as DLServerConfig
 from dlserver import dlserver_pb2_grpc
@@ -79,11 +82,27 @@ async def dlserver(args: Sequence[str]) -> int:
 
     logger.info(f"running with configuration:\n{appconfig}")
 
+    stopping = False
     server = grpc.aio.server()
     server.add_insecure_port(appconfig.endpoint)
     dlserver_pb2_grpc.add_DLServerServicer_to_server(
         DLServer(appconfig.dlserver), server
     )
+
+    def sig_handler(sig: enum.Enum, loop: asyncio.BaseEventLoop):
+        nonlocal stopping
+        if stopping:
+            return
+
+        logger.info(f"got {sig}, terminating")
+        loop.create_task(server.stop(0))
+        stopping = True
+
+    loop = asyncio.get_running_loop()
+    for signame in ('SIGINT', 'SIGTERM'):
+        sig = getattr(signal, signame)
+        loop.add_signal_handler(
+            sig, partial(sig_handler, signame, loop))
 
     await server.start()
     await server.wait_for_termination()
