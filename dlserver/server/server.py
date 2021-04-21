@@ -35,6 +35,8 @@ class Config:
     Configuration for the deep learning server.
     """
 
+    # Number of worker processes to create for inference.
+    iworkers: int
     # Server state file. If the state file is absent it is
     # recreated.
     state_file: Path
@@ -64,6 +66,7 @@ class Config:
 
         sc = config["DLServer"]
         out = {
+            "iworkers": sc.getint("IWorkers"),
             "state_file": Path(sc["StateFile"]),
             "infer_upload_path": Path(sc["InferUploadPath"]),
             "training_upload_path": Path(sc["TrainingUploadPath"]),
@@ -98,6 +101,7 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         self._loop = asyncio.get_running_loop()
         self._context = multiprocessing.get_context("forkserver")
         self._inferer = iexecutor.Inferer(
+            workers=self._config.iworkers,
             model_path=self._persistent_state.model_path, mp_context=self._context
         )
         self._train_swap_task = None

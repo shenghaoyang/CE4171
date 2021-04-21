@@ -134,6 +134,7 @@ class Inferer:
         if self._swapping:
             return False
 
+        # Start and warmup the new executors.
         try:
             self._swapping = True
             new_e = await self._startup(new_path)
