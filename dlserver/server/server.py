@@ -103,7 +103,8 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         self._context = multiprocessing.get_context("forkserver")
         self._inferer = iexecutor.Inferer(
             workers=self._config.iworkers,
-            model_path=self._persistent_state.model_path, mp_context=self._context
+            model_path=self._persistent_state.model_path,
+            mp_context=self._context,
         )
         self._train_swap_task = None
 
@@ -209,7 +210,9 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         )
         elapsed_ns = time.monotonic_ns() - start
 
-        logger.info(f"inferred {peer}'s sample in {elapsed_ns}ns as having label {label}")
+        logger.info(
+            f"inferred {peer}'s sample in {elapsed_ns}ns as having label {label}"
+        )
         wavfile.write(
             self._config.infer_upload_path.joinpath(f"{uid}-{label.to_text()}.wav"),
             16000,

@@ -99,10 +99,9 @@ async def dlserver(args: Sequence[str]) -> int:
         stopping = True
 
     loop = asyncio.get_running_loop()
-    for signame in ('SIGINT', 'SIGTERM'):
+    for signame in ("SIGINT", "SIGTERM"):
         sig = getattr(signal, signame)
-        loop.add_signal_handler(
-            sig, partial(sig_handler, signame, loop))
+        loop.add_signal_handler(sig, partial(sig_handler, signame, loop))
 
     await server.start()
     await server.wait_for_termination()
