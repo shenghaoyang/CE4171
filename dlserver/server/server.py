@@ -3,6 +3,7 @@ server.py
 
 Implementation of the deep learning server.
 """
+import time
 import dataclasses
 import logging
 import grpc
@@ -201,11 +202,14 @@ class DLServer(dlserver_pb2_grpc.DLServerServicer):
         logger.info(f"inferring sample from {peer}: UUID {uid}")
 
         samples = np.array(request.audio_samples, dtype=np.float32)
+
+        start = time.monotonic_ns()
         label = await self._inferer.infer(
             np.array(request.audio_samples, dtype=np.float32)
         )
+        elapsed_ns = time.monotonic_ns() - start
 
-        logger.info(f"inferred {peer}'s sample as having label {label}")
+        logger.info(f"inferred {peer}'s sample in {elapsed_ns}ns as having label {label}")
         wavfile.write(
             self._config.infer_upload_path.joinpath(f"{uid}-{label.to_text()}.wav"),
             16000,
