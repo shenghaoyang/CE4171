@@ -10,3 +10,5 @@ test_client.py
 state.sqlite
 TODO
 dist/
+run.sh
+upload.sh
