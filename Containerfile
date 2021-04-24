@@ -1,4 +1,4 @@
-FROM archlinux:latest
+FROM docker.io/archlinux:latest
 ARG wheel=dlserver-0.0.3-py2.py3-none-any.whl
 LABEL maintainer="me@shenghaoyang.info"
 
