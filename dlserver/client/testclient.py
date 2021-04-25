@@ -9,6 +9,7 @@ import numpy as np
 import grpc
 import argparse
 import sys
+import io
 from scipy.io import wavfile
 from dlserver.labels import Labels
 from dlserver.dlserver_pb2_grpc import DLServerStub
@@ -33,8 +34,8 @@ def main(args: Sequence[str]) -> int:
     )
     args.add_argument(
         "SERVER",
-        help="name/address and port of the server to connect to",
-        default="127.0.0.1:55221",
+        help="name/address and port of the server to connect to,"
+        " e.g. 127.0.0.1:55221",
     )
     args.add_argument(
         "LABEL",
@@ -49,7 +50,8 @@ def main(args: Sequence[str]) -> int:
         return 1
 
     try:
-        rate, data = wavfile.read(sys.stdin.buffer)
+        all_data = sys.stdin.buffer.read()
+        rate, data = wavfile.read(io.BytesIO(all_data))
     except Exception as e:
         print(f"error: could not read input WAV: {e}", file=sys.stderr)
         return 1
