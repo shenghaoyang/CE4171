@@ -25,3 +25,4 @@ dev = [
 
 [tool.flit.scripts]
 dlserver = "dlserver.app:main"
+dlserver_testclient = "dlserver.app_testclient:main_wrapper"
