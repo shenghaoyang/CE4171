@@ -1,5 +1,5 @@
 FROM docker.io/archlinux:latest
-ARG wheel=dlserver-0.0.3-py2.py3-none-any.whl
+ARG wheel=dlserver-0.0.4-py2.py3-none-any.whl
 LABEL maintainer="me@shenghaoyang.info"
 
 RUN pacman -Syu --noconfirm python python-pip python-wheel sqlite && \
