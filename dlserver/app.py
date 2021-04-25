@@ -112,7 +112,7 @@ async def dlserver(args: Sequence[str]) -> int:
 def main() -> int:
     import sys
 
-    return asyncio.run(dlserver(sys.argv))
+    exit(asyncio.run(dlserver(sys.argv)))
 
 
 if __name__ == "__main__":
