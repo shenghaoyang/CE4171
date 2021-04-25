@@ -55,7 +55,8 @@ This container is available on a repository at
 
     Podman can also be used to run this container.
 
-6. Interact with the server using the client application (Android).
+2. Interact with the server using the client application (Android) or
+   the command line test application.
 
 ### Building your own container
 
@@ -104,17 +105,17 @@ steps do not install any GPU-dependent packages.
 
 ## Running the server directly
 
-0. Install the package using `flit` in a clean virtualenv: `flit install`.
+1. Install the package using `flit` in a clean virtualenv: `flit install`.
     - Note that you may need to install `flit` in the virtualenv first.
 
-1. Train the model using the steps outlined in the Jupyter notebook.
+2. Train the model using the steps outlined in the Jupyter notebook.
     - Note that, as above, this requires that the virtualenv is based off
     Python 3.9.1 or above.
     
-2. Customize `server.ini` with appropriate paths and fill in the endpoint
+3. Customize `server.ini` with appropriate paths and fill in the endpoint
    address you wish to use.
    
-3. Run `dlserver server.ini` in the repository's root directory.
+4. Run `dlserver server.ini` in the repository's root directory.
 
 ## Making requests to the server
 
@@ -127,10 +128,10 @@ Follow the instructions in the Android app repository.
 A test client is included in this repository that reads samples in the form
 of WAV files and sends them to the deep learning server.
 
-The client expects a WAV file of a duration less than equal to a second
+The client expects a WAV file of duration less than or equal to a second
 sampled at 16000Hz to be passed over STDIN.
 
-The first argument must be the address & port of the server, e.g. '127.0.0.1:55221'.
+The first argument must be the address & port of the server, e.g. `127.0.0.1:55221`.
 
 For submitting retraining suggestions, a second argument specifying the label
 (e.g. `up`, `down`, `left`, ...) of the sample needs to be provided.
